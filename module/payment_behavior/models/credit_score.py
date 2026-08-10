@@ -145,8 +145,16 @@ class ResPartnerCreditScore(models.Model):
     def _compute_credit_score_trend(self):
         for cs in self:
             # Get previous month's score
-            prev_month = int(cs.month) - 1
-            prev_year = int(cs.year)
+
+            #prev_month = int(cs.month) - 1
+            #prev_year = int(cs.year)
+
+            if int(cs.month) == 1:
+                prev_month = 12
+                prev_year = int(cs.year) - 1
+            else:
+                prev_month = int(cs.month) - 1
+                prev_year = int(cs.year)
 
             previous_score = self.search([
                 ('partner_id', '=', cs.partner_id.id),
@@ -259,8 +267,8 @@ class ResPartnerCreditScore(models.Model):
 
             # Calculate total score (weighted average)
             total_score = (
-                payment_behavior_score * 0.4 +
-                payment_timing_score * 0.6
+                payment_behavior_score * 0.6 +
+                payment_timing_score * 0.4
             )
 
             is_black_list = self._get_is_black_list(cs.partner_id, grace_days, penalty_days, average_pay_time, average_pay_time_total)

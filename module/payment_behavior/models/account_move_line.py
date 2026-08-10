@@ -26,4 +26,8 @@ class AccountMoveLine(models.Model):
                 if commercial_partner and commercial_partner not in partners_to_update:
                     partners_to_update |= commercial_partner
 
+        #FIX #2
+        if partners_to_update:
+            partners_to_update._calculate_payment_behavior()
+
         return res

@@ -149,6 +149,16 @@ class ResPartner(models.Model):
 
             partner.payment_status = payment_status
 
+    #ticket #3 los valores se llenan despues via cron o el hook
+
+    def _auto_init(self):
+        #aqui precreamos las columnas para evitar el compute masivo de mas de 50k registros
+        if not column_exists(self.env.cr, "res_partner", "payment_status"):
+            create_column(self.env.cr,"res_partner","payment_status", "varchar")
+        if not column_exists(self.env.cr, "res_partner","payment_behavior_rating"):
+            create_column(self.env.cr,"res_partner","payment_behavior_rating", "varchar")
+        return super()._auto_init()
+
     @api.depends('credit_score_ids', 'credit_score_ids.date')
     def _compute_last_credit_score(self):
         for p in self:
@@ -267,7 +277,7 @@ class ResPartner(models.Model):
         # Calculate percentage
         percentage_on_time = 0.0
         if paid_period > 0:
-            percentage_on_time = round(on_time_period * paid_period, 2)
+            percentage_on_time = round(on_time_period / paid_period, 2)
 
         # Calculate rating
         rating = self._get_rating_from_percentage(percentage_on_time)

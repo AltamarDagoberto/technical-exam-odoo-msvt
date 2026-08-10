@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timedelta
-from odoo import fields, models, api
+from odoo import fields, models, api, _
 
 import logging
 
@@ -63,6 +63,25 @@ class AccountMove(models.Model):
         """
         self.ensure_one()
         return self.invoice_net_date_due
+
+    def action_recalculate_payment_behavior(self):
+        """ recalcular el comportamiento del pago del partner comercial de la factura"""
+        self.ensure_one()
+        partner = self.partner_id.comercial_partner_id
+        if partner:
+            partner.action_recalculate_payment_behavior()
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params' : {
+                    'title': _('Payment Behavior'),
+                    'message': _('Payment Behavior recalculado satisfactoriamente'),
+                    'type': 'success',
+                    'sticky': False,
+                }
+            }
+
+
 
     @api.depends(
         'invoice_payment_term_id',
@@ -127,7 +146,7 @@ class AccountMove(models.Model):
 
                         if payment_dates:
                             # Get the last payment date
-                            last_payment_date = min(payment_dates).date()
+                            last_payment_date = max(payment_dates).date()
 
                             # Calculate days to pay from invoice date
                             days_to_pay = int((last_payment_date - invoice_date).days)
