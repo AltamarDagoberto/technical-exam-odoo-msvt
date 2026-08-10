@@ -220,6 +220,21 @@ class ResPartner(models.Model):
             )
 ```
 
+
+1.) el store = true + api.depends sobre campos que cambian a diario ( percentage_invoices_on_time y average_pay_time) cada campo recalculo del cron reescribe risk_level en los 50k partner, escrituras y locks masivos, además de esto al instalar el campo dispara el mismo timeout del ticket #3 (necesasitaria _auto_init)
+
+
+no maneja "Sin historia"
+action_send_risk_notification  con force_send = true dentro de un for, esto envia correo a correo, de forma síncrona y bloqueante, con 50k partner generaría timeout  y limites smtp
+
+
+2.) impacto de store = true + api.depends en producción cada cambio en una dependencia recomputada y escribe en bd para cada partner afectado, con dependencias que se actualizan a diario esto genera escrituras y bloqueos constantes, llena el log de transacciones y degrada el rendimiento y el install /upgrade de odoo intenta computarlos para todos los registros existentes de una vez,
+
+3.) que está mal con message_post  el sistema de traducción de odoo extrae los literales envueltos en _() antes de interpolar, un f-string ya viene interpolado, asi que no se puede traducir, además concatena partner.risk_level, que imprime la clave técnica 'critical' en vez de la etiqueta traducida correcto.
+
+4.) el envió masivo  de +50k nunca force_send = True en bucle, encolar como los mail.mail y dejar que el cron de correo los envié por lotes, o usar queue_job de OCA con Jobs por chunks, procesar en batches, por ejem 500 con commit  por lote, no reenviar a quien se notificó, filtrar solo los partner cuyo risk_level cambio a high critical y pues respetar limite del rate del servidor SMTP
+
+
 **Preguntas para el candidato:**
 1. Identifica al menos 3 problemas o mejoras en este codigo
 2. Que impacto tendria en produccion agregar el campo `risk_level` con `store=True` y `@api.depends`?
